@@ -2,6 +2,7 @@ node_modules/
 .cache/
 .tmp/
 data/
+PDF输出/
 logs/
 *.log
 *.zip
@@ -17,4 +18,5 @@ build/
 release/
 *.spec
 server/private/
+
 

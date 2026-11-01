@@ -14,12 +14,13 @@ from email.parser import BytesParser
 from email.policy import default
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, quote
 
 from conversion import convert, capabilities
 from verification import verify
 from source_audit import audit
 from auto_verify import automatic_report
+from pdf_output import save_pdf, pdf_filename
 
 ROOT = Path(os.environ.get('PDFSWITCH_HOME', Path(__file__).resolve().parent)).resolve()
 DATA = ROOT / 'data'
@@ -60,7 +61,9 @@ def _process(job):
         job.update(engine_used=engine, status='checking', message='正在检查 PDF 和参考页面')
         persist(job)
         report = automatic_report(folder / ('source' + job['extension']), folder / 'output.pdf', folder / 'reference.pdf', folder / 'previews')
-        job.update(status='done', message=report['summary'], report=report)
+        exported = save_pdf(folder / 'output.pdf', job['name'], ROOT)
+        job.update(status='done', message=report['summary'], report=report,
+                   output_name=exported.name, output_path=str(exported))
     except Exception as exc:
         job.update(status='failed', message=str(exc)[:2000])
     persist(job)
@@ -149,6 +152,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(404, {'error': '文件不存在'})
         self.send_response(200)
         self.send_header('Content-Type', mimetypes.guess_type(file)[0] or 'application/octet-stream')
+        if route.startswith('/files/') and relative == 'output.pdf':
+            name = JOBS[parts[2]].get('output_name') or pdf_filename(JOBS[parts[2]].get('name', 'output.pdf'))
+            self.send_header('Content-Disposition', "inline; filename=\"document.pdf\"; filename*=UTF-8''" + quote(name, safe=''))
         self.send_header('Content-Length', str(file.stat().st_size))
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('Cache-Control', 'no-store')
@@ -246,3 +252,4 @@ if __name__ == '__main__':
     server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
     print(f'PDFSwitch: http://127.0.0.1:{port}', flush=True)
     server.serve_forever()
+

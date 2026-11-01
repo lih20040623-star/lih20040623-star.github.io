@@ -7,6 +7,7 @@ import mimetypes
 import os
 from pathlib import Path
 import secrets
+import socket
 import sys
 import threading
 import time
@@ -14,6 +15,7 @@ from urllib.parse import urlsplit
 import webbrowser
 
 SITE_URL = 'https://lih20040623-star.github.io/'
+VERSION = '1.1.0'
 PORT = 18765
 FROZEN = bool(getattr(sys, 'frozen', False))
 BUNDLE = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent))
@@ -52,15 +54,15 @@ class Pairing:
             return 200, {'token': self.token, 'application': 'PDFSwitch Connector'}
 
 
-def make_handler(app, pairing, site_url=SITE_URL, dev_origin=None):
+def make_handler(app, pairing, site_url=SITE_URL, dev_origin=None, port=PORT):
     site = urlsplit(site_url)
-    allowed = {f'{site.scheme}://{site.netloc}', f'http://127.0.0.1:{PORT}'}
+    allowed = {f'{site.scheme}://{site.netloc}', f'http://127.0.0.1:{port}'}
     if dev_origin:
         allowed.add(dev_origin)
 
     class Handler(app.Handler):
         def valid_host(self):
-            return self.headers.get('Host') == f'127.0.0.1:{PORT}'
+            return self.headers.get('Host') == f'127.0.0.1:{port}'
 
         def valid_origin(self):
             origin = self.headers.get('Origin')
@@ -107,7 +109,8 @@ def make_handler(app, pairing, site_url=SITE_URL, dev_origin=None):
                 if not self.guard():
                     return
                 if route == '/api/health':
-                    return self.send(200, {'application': 'PDFSwitch Connector', 'status': 'ok', 'version': '1.0.0'})
+                    return self.send(200, {'application': 'PDFSwitch Connector', 'status': 'ok',
+                                           'version': VERSION, 'output_directory': str(app.ROOT / 'PDF输出')})
                 if route == '/api/jobs':
                     with app.LOCK:
                         jobs = sorted(app.JOBS.values(), key=lambda job: job['created'], reverse=True)
@@ -205,7 +208,11 @@ def main():
     parser.add_argument('--no-browser', action='store_true')
     parser.add_argument('--data-root', type=Path)
     parser.add_argument('--dev-origin')
+    parser.add_argument('--port', type=int, default=PORT, help='Loopback listening port (default: 18765)')
     args = parser.parse_args()
+    if not 1024 <= args.port <= 65535:
+        parser.error('--port must be between 1024 and 65535')
+    port = args.port
     home = (args.data_root or (Path(sys.executable).parent if FROZEN else Path(__file__).resolve().parent)).resolve()
     if home.drive.upper() == 'C:':
         raise SystemExit('请将连接器解压到 D 盘后再运行，程序不会在 C 盘建立数据和缓存。')
@@ -228,18 +235,26 @@ def main():
     import app
     pairing = Pairing()
     from http.server import ThreadingHTTPServer
+    class LocalServer(ThreadingHTTPServer):
+        allow_reuse_address = False
+
+        def server_bind(self):
+            if hasattr(socket, 'SO_EXCLUSIVEADDRUSE'):
+                self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            super().server_bind()
     try:
-        server = ThreadingHTTPServer(('127.0.0.1', PORT), make_handler(app, pairing, dev_origin=args.dev_origin))
+        server = LocalServer(('127.0.0.1', port), make_handler(app, pairing, dev_origin=args.dev_origin, port=port))
     except OSError:
-        raise SystemExit('连接器端口 18765 已占用。若连接器已运行，请打开 http://127.0.0.1:18765/connect 获取配对码。')
+        raise SystemExit(f'连接器端口 {port} 已占用。若连接器已运行，请打开 http://127.0.0.1:{port}/connect 获取配对码。')
     server.daemon_threads = True
-    print('PDFSwitch Connector 1.0.0', flush=True)
-    print(f'Local connector: http://127.0.0.1:{PORT}/connect', flush=True)
+    print('PDFSwitch Connector ' + VERSION, flush=True)
+    print(f'Local connector: http://127.0.0.1:{port}/connect', flush=True)
     print(f'Pairing code (10 minutes): {pairing.code}', flush=True)
     print(f'Data directory: {home / "data"}', flush=True)
+    print(f'PDF output directory: {home / "PDF输出"}', flush=True)
     print('Keep this window open. Press Ctrl+C to stop.', flush=True)
     if not args.no_browser:
-        webbrowser.open(f'http://127.0.0.1:{PORT}/connect')
+        webbrowser.open(f'http://127.0.0.1:{port}/connect')
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -251,3 +266,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
