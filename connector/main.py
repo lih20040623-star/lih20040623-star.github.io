@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 import webbrowser
 
 SITE_URL = 'https://lih20040623-star.github.io/'
-VERSION = '1.1.0'
+VERSION = '1.1.1'
 PORT = 18765
 FROZEN = bool(getattr(sys, 'frozen', False))
 BUNDLE = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent))
@@ -266,4 +266,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

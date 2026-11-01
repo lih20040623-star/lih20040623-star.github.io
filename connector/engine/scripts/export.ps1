@@ -12,6 +12,7 @@ $owned = $false
 $evidence = @{}
 . (Join-Path $PSScriptRoot 'capture-corel.ps1')
 . (Join-Path $PSScriptRoot 'capture-office.ps1')
+. (Join-Path $PSScriptRoot 'export-word.ps1')
 
 function Connect-CorelDraw {
     try { return [Runtime.InteropServices.Marshal]::GetActiveObject('CorelDRAW.Application') }
@@ -74,7 +75,7 @@ try {
         $app.AutomationSecurity = 3
         $document = $app.Documents.Open($source, $false, $true, $false)
         $evidence = Capture-WordSource -Document $document -Folder ([IO.Path]::GetDirectoryName($target))
-        $document.ExportAsFixedFormat($target, 17)
+        $evidence.word_background_export = Export-WordPdf -App $app -Document $document -Target $target
     } elseif ($ext -in @('.xls', '.xlsx', '.et')) {
         $progid = if ($engine -eq 'wps' -or $ext -eq '.et') { 'KET.Application' } else { 'Excel.Application' }
         $app = New-Object -ComObject $progid
