@@ -1,0 +1,15 @@
+PDFSwitch Connector bundles third-party software for offline operation.
+
+Python: Python Software Foundation License, https://docs.python.org/3/license.html
+PyInstaller bootloader: GPL with the PyInstaller bootloader exception, https://pyinstaller.org/en/stable/license.html
+pypdf: BSD-3-Clause, https://github.com/py-pdf/pypdf/blob/main/LICENSE
+NumPy: BSD-3-Clause and bundled numerical library notices, see _internal/numpy* and https://numpy.org/doc/stable/license.html
+Pillow: MIT-CMU / HPND and bundled image library notices, https://github.com/python-pillow/Pillow/blob/main/LICENSE
+Poppler and its dependencies: GPL and component-specific licenses. License copies and source references are included under _internal/licenses/poppler.
+
+The Windows Poppler distribution was copied from the pre-existing bundled runtime.
+Distribution manifest and bundled licenses are included. Poppler source: https://poppler.freedesktop.org/ ; dependency sources and package build recipes: https://github.com/conda-forge.
+Poppler is invoked as a separate command-line executable. PDFSwitch does not change its binaries.
+
+Microsoft Office, WPS, Adobe Illustrator and CorelDRAW are not included.
+Their names identify the user's separately installed software.

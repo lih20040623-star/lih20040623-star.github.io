@@ -1,0 +1,16 @@
+GPL-2.0.txt: https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt
+ICU.txt: https://raw.githubusercontent.com/unicode-org/icu/main/LICENSE
+curl.txt: https://raw.githubusercontent.com/curl/curl/master/COPYING
+OpenSSL.txt: https://raw.githubusercontent.com/openssl/openssl/master/LICENSE.txt
+xz.txt: https://raw.githubusercontent.com/tukaani-project/xz/master/COPYING
+libssh2.txt: https://raw.githubusercontent.com/libssh2/libssh2/master/COPYING
+libpsl.txt: https://raw.githubusercontent.com/rockdaboot/libpsl/master/COPYING
+lcms.txt: https://raw.githubusercontent.com/mm2/Little-CMS/master/LICENSE
+libjpeg-turbo.txt: https://raw.githubusercontent.com/libjpeg-turbo/libjpeg-turbo/main/LICENSE.md
+libpng.txt: https://raw.githubusercontent.com/pnggroup/libpng/libpng16/LICENSE
+lerc.txt: https://raw.githubusercontent.com/Esri/lerc/master/LICENSE
+libdeflate.txt: https://raw.githubusercontent.com/ebiggers/libdeflate/master/COPYING
+zlib.txt: https://raw.githubusercontent.com/madler/zlib/master/LICENSE
+zstd.txt: https://raw.githubusercontent.com/facebook/zstd/dev/LICENSE
+freetype.txt: https://raw.githubusercontent.com/freetype/freetype/master/docs/FTL.TXT
+libtiff.txt: https://raw.githubusercontent.com/libsdl-org/libtiff/master/LICENSE.md
