@@ -53,7 +53,9 @@
     if (!response.ok) throw Error('连接器未响应');
     const result = await response.json();
     if (result.application !== 'PDFSwitch Connector') throw Error('本机端口不是 PDFSwitch 连接器');
-    updateState(true);
+    updateState(true, result.output_directory
+      ? `PDF 自动保存到：${result.output_directory}，文件名沿用原文件名，同名自动加序号。`
+      : '已连接旧版连接器。要将 PDF 集中保存并沿用原名，请下载并运行 v1.1.0 或更新版本。');
     window.dispatchEvent(new Event('pdfswitch:connected'));
   }
 
@@ -137,3 +139,4 @@
   if (token) check().catch(() => updateState(false, '未连接到本机连接器，请运行连接器后重新连接。'));
   if (savedCode && /^[0-9]{6}$/.test(savedCode)) showPairDialog();
 })();
+
