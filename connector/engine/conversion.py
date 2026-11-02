@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from ai_pdf import preserve_ai_pdf
+from image_quality import preserve_office_images
 
 ROOT = Path(__file__).resolve().parent
 
@@ -50,18 +51,7 @@ def convert(source, target, engine='auto'):
     if preserved and not capabilities()['native'].get('Illustrator'):
         return 'AI 内嵌 PDF（原数据保留；原生画板接口不可用）'
     if engine == 'libreoffice':
-        if ext in {'.ai', '.cdr'}:
-            raise ValueError('设计文件请使用原生引擎，避免兼容转换丢失效果')
-        executable = find_soffice()
-        if not executable:
-            raise ValueError('未找到 LibreOffice。请安装后设置 SOFFICE_PATH，或选择已安装的原生引擎。')
-        profile = (target.parent / 'lo-profile').as_uri()
-        result = subprocess.run([executable, '-env:UserInstallation=' + profile, '--headless', '--convert-to', 'pdf', '--outdir', str(target.parent), str(source)], capture_output=True, timeout=180)
-        exported = source.with_suffix('.pdf')
-        if result.returncode or not exported.exists():
-            raise RuntimeError('LibreOffice 转换失败：' + result.stderr.decode(errors='replace')[:1000])
-        exported.replace(target)
-        return 'LibreOffice（兼容转换，需核对）'
+        raise ValueError('严格字体与原图质量模式不允许 LibreOffice 兼容替换导出。请选择已安装原字体的原生软件；不会自动替换字体或降低分辨率。')
     if os.name != 'nt':
         raise ValueError('原生引擎需要 Windows 和对应桌面软件')
     # No silent fallback: a failure in the selected native renderer is actionable.
@@ -90,4 +80,14 @@ def convert(source, target, engine='auto'):
         native_evidence.update(saved_evidence)
         (target.parent/'evidence.json').write_text(json.dumps(native_evidence,ensure_ascii=False,indent=2),encoding='utf-8')
         return 'AI 原样保留 + Illustrator 原生画板核对'
+    if ext in {'.doc', '.docx', '.wps', '.xls', '.xlsx', '.et', '.ppt', '.pptx', '.dps'}:
+        try:
+            quality = preserve_office_images(source, target)
+        except Exception:
+            target.unlink(missing_ok=True)
+            raise
+        evidence_path = target.parent / 'evidence.json'
+        evidence = json.loads(evidence_path.read_text(encoding='utf-8-sig')) if evidence_path.is_file() else {}
+        evidence['image_quality'] = quality
+        evidence_path.write_text(json.dumps(evidence, ensure_ascii=False, indent=2), encoding='utf-8')
     return result.stdout.decode('utf-8', errors='replace').strip() or '原生引擎'

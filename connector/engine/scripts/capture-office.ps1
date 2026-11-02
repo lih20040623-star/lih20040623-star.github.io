@@ -1,4 +1,4 @@
-function Capture-WordSource {
+﻿function Capture-WordSource {
     param($Document, [string]$Folder)
     $result=@{ capture_kind='word-emf'; capture_scope='visible-printable-pages'; capture_complete=$true; source_pages=@(); capture_errors=@(); text=[string]$Document.Content.Text; pages=[int]$Document.ComputeStatistics(2) }
     $directory=Join-Path $Folder 'previews'
@@ -64,7 +64,8 @@ function Capture-PresentationSource {
 
 function Capture-WorkbookInventory {
     param($App,$Document)
-    $result=@{capture_kind='workbook-inventory';inventory_complete=$true;sheet_inventory=@();text='';capture_errors=@()}
+    $result=@{capture_kind='workbook-inventory';inventory_complete=$true;sheet_inventory=@();text='';capture_errors=@();required_fonts=@()}
+    $fontNames=[Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
     $visited=0
     foreach ($sheet in $Document.Worksheets) {
         $entry=@{name=[string]$sheet.Name;visible=($sheet.Visible -eq -1);print_area=[string]$sheet.PageSetup.PrintArea;cells=@();shapes=[int]$sheet.Shapes.Count;charts=[int]$sheet.ChartObjects().Count;outside_print_area=0}
@@ -77,6 +78,14 @@ function Capture-WorkbookInventory {
                     if ($null -eq $cell.Value2 -or $cell.EntireRow.Hidden -or $cell.EntireColumn.Hidden) { continue }
                     if ($entry.print_area -and $null -eq $App.Intersect($cell,$sheet.Range($entry.print_area))) { $entry.outside_print_area++; continue }
                     $display=[string]$cell.Text
+                    $fontName=[string]$cell.Font.Name
+                    if($fontName){[void]$fontNames.Add($fontName)}
+                    elseif($display){
+                        for($characterIndex=1;$characterIndex -le $display.Length;$characterIndex++) {
+                            $fontName=[string]$cell.Characters($characterIndex,1).Font.Name
+                            if($fontName){[void]$fontNames.Add($fontName)}
+                        }
+                    }
                     $entry.cells+=@{address=[string]$cell.Address();text=$display}
                     $result.text+=$display+"`n"
                 }
@@ -84,5 +93,6 @@ function Capture-WorkbookInventory {
         }
         $result.sheet_inventory+=$entry
     }
+    $result.required_fonts=@($fontNames)
     return $result
 }

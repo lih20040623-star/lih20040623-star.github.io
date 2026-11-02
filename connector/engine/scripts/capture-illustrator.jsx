@@ -28,6 +28,7 @@
         while((match=regex.exec(xmp))!==null) {
             try { app.textFonts.getByName(match[1]); } catch(error) { evidence.missing_fonts.push(match[1]); }
         }
+        if(evidence.missing_fonts.length)throw new Error('MISSING_FONTS: '+evidence.missing_fonts.join(', ')+'; export stopped without font substitution.');
         for(var linkIndex=0;linkIndex<doc.placedItems.length;linkIndex++) {
             try { if(!doc.placedItems[linkIndex].file.exists)evidence.missing_links.push(doc.placedItems[linkIndex].file.name); }
             catch(error) { evidence.missing_links.push('unresolved link '+(linkIndex+1)); }
@@ -58,8 +59,16 @@
         if(evidence.missing_fonts.length||evidence.missing_links.length){evidence.capture_complete=false;evidence.capture_errors.push('Missing source fonts or linked files.');}
         if(!request.keep_pdf) {
             var pdfOptions=new PDFSaveOptions();pdfOptions.preserveEditability=false;pdfOptions.artboardRange='';
+            pdfOptions.colorDownsampling=0;pdfOptions.grayscaleDownsampling=0;pdfOptions.monochromeDownsampling=0;
+            pdfOptions.colorDownsamplingMethod=DownsampleMethod.NODOWNSAMPLE;
+            pdfOptions.grayscaleDownsamplingMethod=DownsampleMethod.NODOWNSAMPLE;
+            pdfOptions.monochromeDownsamplingMethod=DownsampleMethod.NODOWNSAMPLE;
+            pdfOptions.colorCompression=CompressionQuality.None;
+            pdfOptions.grayscaleCompression=CompressionQuality.None;
+            pdfOptions.monochromeCompression=MonochromeCompression.None;
             doc.saveAs(new File(request.target),pdfOptions);
         }
+        evidence.image_quality={policy:request.keep_pdf?'embedded-pdf-preserved':'original-pixels',downsampling:false};
         return encode(evidence);
     } finally {
         if(doc)doc.close(SaveOptions.DONOTSAVECHANGES);

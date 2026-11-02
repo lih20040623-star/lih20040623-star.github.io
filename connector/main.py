@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 import webbrowser
 
 SITE_URL = 'https://lih20040623-star.github.io/'
-VERSION = '1.1.1'
+VERSION = '1.2.0'
 PORT = 18765
 FROZEN = bool(getattr(sys, 'frozen', False))
 BUNDLE = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent))
@@ -110,7 +110,8 @@ def make_handler(app, pairing, site_url=SITE_URL, dev_origin=None, port=PORT):
                     return
                 if route == '/api/health':
                     return self.send(200, {'application': 'PDFSwitch Connector', 'status': 'ok',
-                                           'version': VERSION, 'output_directory': str(app.ROOT / 'PDF输出')})
+                                           'version': VERSION, 'output_directory': str(app.ROOT / 'PDF输出'),
+                                           'font_policy': 'stop-if-missing', 'image_policy': 'original-pixels'})
                 if route == '/api/jobs':
                     with app.LOCK:
                         jobs = sorted(app.JOBS.values(), key=lambda job: job['created'], reverse=True)

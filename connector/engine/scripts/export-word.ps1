@@ -1,4 +1,4 @@
-function Export-WordPdf {
+﻿function Export-WordPdf {
     param($App, $Document, [string]$Target)
     $policy = @{print_backgrounds=$null; background_suppressed=$false}
     # Some Word versions export a legacy document's hidden page color even
@@ -21,7 +21,18 @@ function Export-WordPdf {
                 $policy.background_suppressed = $true
             }
         }
-        $Document.ExportAsFixedFormat($Target, 17)
+        # The legacy API downsamples images even when DOCX auto-compression is
+        # disabled. The quality argument belongs to ExportAsFixedFormat2.
+        if($Document | Get-Member -Name ExportAsFixedFormat2) {
+            $Document.ExportAsFixedFormat2($Target,17,$false,0,0,1,1,0,$true,$true,0,$true,$true,$false,$true)
+            $policy.export_method='ExportAsFixedFormat2'
+        } else {
+            # The Python quality gate restores and verifies original source pixels
+            # for older renderers too; no unverified output is published.
+            $Document.ExportAsFixedFormat($Target,17,$false,0)
+            $policy.export_method='ExportAsFixedFormat'
+        }
+        $policy.image_quality='source-pixel-verification-required'
     } finally {
         if ($policy.background_suppressed) { $fill.Visible = $originalVisibility }
     }
